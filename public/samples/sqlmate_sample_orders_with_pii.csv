@@ -1,0 +1,61 @@
+order_id,order_date,seller_id,customer_id,customer_name,customer_email,customer_phone,shipping_address,ip_address,product_category,product_name,quantity,unit_price,discount,net_amount,payment_method,delivery_status,review_score,inquiry_type,region
+O10019,2025-12-01,S002,C196,LeeA,leea29@example.com,010-9486-8611,Incheon Mapo-gu 72-16,218.62.233.68,Home,Scented Candle,2,18000,500,35500,Card,Preparing,,None,Incheon
+O10032,2025-12-01,S001,C174,YoonHa,yoonha12@mail.com,010-6700-7690,Gyeonggi Suwon-si 42-7,220.82.168.210,Home,Desk Mat,1,18000,1000,17000,Wallet,Shipped,,None,Gyeonggi
+O10037,2025-12-02,S004,C104,LimSeo,limseo31@company.co,010-5708-4727,Busan Mapo-gu 56-7,195.51.227.85,Food,Chocolate,3,12000,0,36000,Wallet,Delivered,2.0,None,Busan
+O10049,2025-12-03,S003,C127,YoonA,yoona59@mail.com,010-3578-7062,Busan Suwon-si 93-21,199.43.26.79,Food,Snack Box,1,20000,0,20000,Wallet,Delivered,5.0,None,Busan
+O10050,2025-12-03,S001,C136,LimHa,limha68@company.co,010-6053-1744,Seoul Gangnam-gu 51-39,15.3.104.154,Food,Coffee Beans,3,20000,0,60000,Card,Delivered,5.0,None,Seoul
+O10012,2025-12-04,S003,C133,ParkYoung,parkyoung9@example.com,010-7054-5669,Incheon Gangnam-gu 57-35,181.154.4.153,Beauty,Sheet Mask,2,8000,1000,15000,Card,Preparing,,Product,Incheon
+O10043,2025-12-04,S002,C135,KimYoung,kimyoung28@mail.com,010-8285-4868,Incheon Suwon-si 13-24,140.183.31.203,Electronics,Bluetooth Speaker,3,18000,2000,52000,Card,Delivered,3.0,None,Incheon
+O10051,2025-12-04,S002,C145,LeeA,leea95@example.com,010-8147-1307,Busan Haeundae-gu 118-5,221.160.219.207,Food,Snack Box,1,15000,500,14500,Wallet,Delivered,4.0,None,Busan
+O10057,2025-12-04,S003,C198,LimJin,limjin77@mail.com,010-3527-3658,Incheon Gangnam-gu 107-40,208.84.224.22,Beauty,Lip Tint,1,8000,1000,7000,Wallet,Delivered,5.0,None,Incheon
+O10026,2025-12-05,S004,C143,JungBin,jungbin90@mail.com,010-1166-9464,Gyeonggi Gangnam-gu 11-16,185.208.250.123,Electronics,Webcam,2,32000,0,64000,BankTransfer,Shipped,,None,Gyeonggi
+O10034,2025-12-05,S002,C114,JangSeo,jangseo83@example.com,010-9165-5781,Busan Nam-gu 91-18,107.247.241.124,Electronics,Power Bank,1,18000,1000,17000,Card,Delivered,5.0,None,Busan
+O10040,2025-12-05,S001,C196,ParkSeo,parkseo81@company.co,010-1645-6061,Daegu Haeundae-gu 5-38,94.67.46.151,Stationery,Highlighter,3,3000,0,9000,Wallet,Preparing,,Payment,Daegu
+O10044,2025-12-05,S002,C170,ChoiBin,choibin28@example.com,010-6383-3417,Seoul Nam-gu 1-18,220.74.66.128,Electronics,Wireless Mouse,3,12000,0,36000,Card,Delivered,5.0,None,Seoul
+O10002,2025-12-06,S003,C148,LeeWoo,leewoo38@company.co,010-6925-4150,Gyeonggi Mapo-gu 6-15,198.148.40.119,Beauty,Sheet Mask,1,18000,1000,17000,BankTransfer,Delivered,3.0,None,Gyeonggi
+O10023,2025-12-06,S003,C196,KimHye,kimhye26@example.com,010-3496-4908,Incheon Gangnam-gu 61-8,145.111.238.131,Food,Coffee Beans,1,5000,0,5000,Card,Delivered,2.0,None,Incheon
+O10041,2025-12-06,S004,C143,LeeHa,leeha10@example.com,010-4696-7511,Gyeonggi Nam-gu 47-6,203.202.7.135,Beauty,Lip Tint,2,22000,0,44000,BankTransfer,Canceled,,None,Gyeonggi
+O10053,2025-12-06,S002,C157,LimBin,limbin42@company.co,010-6179-3473,Gyeonggi Haeundae-gu 9-31,114.155.140.28,Stationery,Notebook,1,2000,0,2000,Wallet,Delivered,2.0,None,Gyeonggi
+O10054,2025-12-06,S001,C194,KimHa,kimha74@company.co,010-4084-6267,Busan Nam-gu 61-33,39.31.230.52,Electronics,Power Bank,1,12000,1000,11000,Wallet,Delivered,4.0,None,Busan
+O10060,2025-12-06,S002,C178,KimSeo,kimseo3@mail.com,010-4533-3449,Seoul Nam-gu 94-39,136.216.56.147,Food,Gourmet Ramen,3,9000,500,26500,Wallet,Delivered,2.0,None,Seoul
+O10031,2025-12-07,S001,C159,JungA,junga35@company.co,010-9847-9090,Daegu Haeundae-gu 11-39,11.221.165.128,Beauty,Lip Tint,1,8000,1000,7000,Wallet,Delivered,,None,Daegu
+O10058,2025-12-07,S003,C156,JangSu,jangsu49@company.co,010-9641-7859,Gyeonggi Gangnam-gu 105-13,206.70.128.26,Electronics,Webcam,1,18000,500,17500,Card,Shipped,,None,Gyeonggi
+O10010,2025-12-08,S004,C184,JangJin,jangjin25@mail.com,010-4566-1958,Gyeonggi Nam-gu 95-35,16.160.29.25,Electronics,Wireless Mouse,1,25000,0,25000,BankTransfer,Delivered,3.0,None,Gyeonggi
+O10022,2025-12-08,S002,C184,KimSeo,kimseo83@mail.com,010-3223-8564,Busan Gangnam-gu 7-17,98.167.108.232,Electronics,Power Bank,1,18000,0,18000,Wallet,Delivered,,None,Busan
+O10029,2025-12-08,S004,C172,JungSeo,jungseo32@example.com,010-7818-4697,Busan Nam-gu 49-29,114.152.219.156,Beauty,Hand Cream,1,8000,0,8000,Wallet,Delivered,5.0,Refund,Busan
+O10035,2025-12-08,S002,C175,LimHa,limha20@mail.com,010-9824-8935,Incheon Suwon-si 43-36,196.193.233.164,Beauty,Cleansing Oil,2,8000,1000,15000,BankTransfer,Delivered,5.0,None,Incheon
+O10039,2025-12-08,S003,C138,ChoiA,choia62@example.com,010-4886-7248,Seoul Nam-gu 46-37,76.151.11.202,Electronics,Bluetooth Speaker,3,32000,1000,95000,BankTransfer,Delivered,4.0,Payment,Seoul
+O10046,2025-12-08,S001,C179,LimWoo,limwoo92@mail.com,010-7240-9692,Seoul Suwon-si 59-33,155.220.50.58,Electronics,Power Bank,2,12000,0,24000,Wallet,Preparing,,Refund,Seoul
+O10006,2025-12-09,S001,C146,JungHye,junghye8@example.com,010-2290-2403,Busan Haeundae-gu 105-5,195.64.65.243,Home,Desk Mat,1,23000,0,23000,Wallet,Shipped,,Shipping,Busan
+O10007,2025-12-09,S002,C157,LeeHye,leehye29@example.com,010-6539-1344,Busan Nam-gu 71-15,151.112.3.36,Home,Desk Mat,2,18000,2000,34000,Wallet,Shipped,,None,Busan
+O10018,2025-12-09,S001,C194,ParkSeo,parkseo37@company.co,010-6491-2530,Busan Gangnam-gu 87-20,58.101.75.12,Food,Tea Set,2,12000,500,23500,Wallet,Shipped,,None,Busan
+O10021,2025-12-09,S001,C149,LimMin,limmin98@company.co,010-7232-8814,Gyeonggi Mapo-gu 46-20,193.199.214.112,Beauty,Lip Tint,2,12000,0,24000,Wallet,Delivered,5.0,None,Gyeonggi
+O10025,2025-12-09,S004,C155,ParkWoo,parkwoo84@mail.com,010-9817-8921,Busan Haeundae-gu 56-38,69.165.125.44,Stationery,Highlighter,3,2500,500,7000,BankTransfer,Delivered,,None,Busan
+O10042,2025-12-09,S001,C128,LeeHa,leeha90@mail.com,010-7689-2911,Incheon Gangnam-gu 6-3,78.252.59.49,Food,Snack Box,2,5000,0,10000,Wallet,Delivered,4.0,None,Incheon
+O10011,2025-12-10,S004,C172,ChoiBin,choibin77@example.com,010-2343-7868,Daegu Nam-gu 73-34,81.133.104.160,Home,Mug,1,23000,0,23000,Wallet,Delivered,4.0,None,Daegu
+O10030,2025-12-10,S001,C157,LimHa,limha38@example.com,010-4792-5720,Daegu Suwon-si 90-30,19.119.135.101,Stationery,Notebook,3,2000,0,6000,Wallet,Preparing,,Shipping,Daegu
+O10001,2025-12-11,S001,C164,LimMin,limmin72@example.com,010-9928-7873,Seoul Gangnam-gu 58-38,72.3.81.216,Food,Tea Set,1,20000,500,19500,Card,Preparing,,Product,Seoul
+O10013,2025-12-11,S001,C133,HanHa,hanha33@example.com,010-2512-7939,Gyeonggi Suwon-si 6-1,86.66.134.82,Food,Gourmet Ramen,1,12000,0,12000,Wallet,Shipped,,None,Gyeonggi
+O10048,2025-12-11,S001,C113,KangWoo,kangwoo48@example.com,010-5564-4705,Incheon Haeundae-gu 109-36,197.13.136.14,Food,Coffee Beans,3,20000,0,60000,Wallet,Delivered,5.0,None,Incheon
+O10059,2025-12-11,S004,C155,LeeHye,leehye58@mail.com,010-1436-7797,Busan Mapo-gu 51-33,96.120.197.41,Home,Scented Candle,3,10000,0,30000,BankTransfer,Canceled,,Refund,Busan
+O10008,2025-12-12,S001,C173,LimHa,limha32@mail.com,010-7669-4119,Gyeonggi Mapo-gu 13-28,91.216.210.239,Stationery,Gel Pen,1,1500,0,1500,Wallet,Preparing,,None,Gyeonggi
+O10014,2025-12-12,S004,C146,KimYoung,kimyoung27@company.co,010-5088-2684,Daegu Suwon-si 100-36,105.79.121.83,Electronics,Webcam,1,45000,0,45000,Wallet,Delivered,4.0,Shipping,Daegu
+O10017,2025-12-12,S004,C164,JungA,junga42@mail.com,010-5844-3085,Seoul Gangnam-gu 54-25,174.89.154.207,Home,Desk Mat,3,14000,1000,41000,BankTransfer,Delivered,5.0,None,Seoul
+O10027,2025-12-12,S004,C144,YoonWoo,yoonwoo43@mail.com,010-8434-5438,Incheon Suwon-si 33-15,31.98.161.61,Electronics,Wireless Mouse,1,18000,2000,16000,Wallet,Shipped,,None,Incheon
+O10028,2025-12-12,S002,C101,HanJin,hanjin36@example.com,010-1893-5786,Gyeonggi Gangnam-gu 82-32,27.6.145.240,Beauty,Sunscreen,1,22000,0,22000,BankTransfer,Shipped,,Product,Gyeonggi
+O10033,2025-12-12,S004,C169,JangA,janga7@example.com,010-9494-6927,Busan Nam-gu 97-32,161.226.26.104,Electronics,Webcam,1,25000,0,25000,BankTransfer,Delivered,,Shipping,Busan
+O10038,2025-12-12,S003,C123,ParkJin,parkjin11@company.co,010-7267-4945,Seoul Haeundae-gu 117-38,37.118.236.130,Stationery,Sticker Pack,1,2500,0,2500,Wallet,Shipped,,None,Seoul
+O10052,2025-12-12,S004,C167,LeeA,leea40@company.co,010-6562-4630,Busan Suwon-si 100-11,20.58.99.178,Stationery,Mechanical Pencil,1,2500,0,2500,BankTransfer,Delivered,5.0,None,Busan
+O10056,2025-12-12,S002,C148,KangJin,kangjin86@company.co,010-9624-2531,Busan Haeundae-gu 66-24,5.185.158.92,Stationery,Highlighter,3,2000,0,6000,Wallet,Canceled,,None,Busan
+O10015,2025-12-13,S002,C160,ChoiHye,choihye59@mail.com,010-6000-4728,Incheon Gangnam-gu 4-13,103.168.142.35,Stationery,Notebook,3,2500,2000,5500,Card,Shipped,,Shipping,Incheon
+O10016,2025-12-13,S003,C113,LimA,lima45@company.co,010-6139-8149,Busan Nam-gu 66-8,99.97.130.22,Home,Storage Box,3,14000,0,42000,Wallet,Canceled,,None,Busan
+O10020,2025-12-13,S004,C131,JungWoo,jungwoo63@company.co,010-4919-5499,Daegu Haeundae-gu 10-19,61.139.171.163,Home,Desk Mat,1,23000,500,22500,Card,Delivered,4.0,Payment,Daegu
+O10024,2025-12-13,S003,C191,ChoiSeo,choiseo76@company.co,010-4978-2669,Gyeonggi Suwon-si 109-39,207.61.21.177,Home,Desk Mat,3,23000,0,69000,BankTransfer,Delivered,,None,Gyeonggi
+O10045,2025-12-13,S002,C167,LeeSeo,leeseo61@mail.com,010-6931-9408,Seoul Nam-gu 14-29,129.113.22.154,Stationery,Notebook,1,2500,0,2500,BankTransfer,Preparing,,None,Seoul
+O10055,2025-12-13,S003,C149,YoonYoung,yoonyoung87@company.co,010-1857-6482,Seoul Mapo-gu 43-7,143.197.145.129,Home,Mug,1,23000,1000,22000,Card,Shipped,,None,Seoul
+O10003,2025-12-14,S001,C181,ParkWoo,parkwoo94@example.com,010-3677-8573,Incheon Haeundae-gu 35-36,57.166.28.117,Food,Coffee Beans,3,12000,2000,34000,BankTransfer,Delivered,3.0,Shipping,Incheon
+O10004,2025-12-14,S001,C171,HanSu,hansu96@company.co,010-8019-7543,Busan Suwon-si 29-9,131.252.46.24,Electronics,Bluetooth Speaker,1,18000,500,17500,Wallet,Delivered,5.0,Payment,Busan
+O10005,2025-12-14,S001,C101,LeeWoo,leewoo97@mail.com,010-6573-2827,Gyeonggi Suwon-si 56-11,117.1.134.91,Beauty,Sunscreen,2,18000,0,36000,BankTransfer,Canceled,,None,Gyeonggi
+O10009,2025-12-14,S001,C159,ChoiSeo,choiseo57@company.co,010-2604-1828,Seoul Nam-gu 108-1,24.121.85.208,Stationery,Mechanical Pencil,3,2500,1000,6500,BankTransfer,Preparing,,Product,Seoul
+O10036,2025-12-14,S002,C104,ParkWoo,parkwoo76@mail.com,010-2644-8213,Gyeonggi Mapo-gu 68-30,4.73.209.79,Home,Storage Box,1,18000,500,17500,Wallet,Delivered,3.0,Refund,Gyeonggi
+O10047,2025-12-14,S002,C119,JangSeo,jangseo12@example.com,010-2527-8075,Incheon Mapo-gu 96-24,208.66.30.168,Electronics,USB-C Cable,2,32000,0,64000,BankTransfer,Shipped,,Payment,Incheon
