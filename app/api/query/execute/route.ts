@@ -8,15 +8,15 @@ export const maxDuration = 30;
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { sql, datasetId } = body;
+    const { sql, datasetId, groupId } = body;
 
     if (!sql) {
       return NextResponse.json({ error: "SQL이 필요합니다." }, { status: 400 });
     }
 
-    if (!datasetId) {
+    if (!datasetId && !groupId) {
       return NextResponse.json(
-        { error: "datasetId가 필요합니다." },
+        { error: "datasetId 또는 groupId가 필요합니다." },
         { status: 400 }
       );
     }
@@ -34,55 +34,98 @@ export async function POST(request: NextRequest) {
 
     // 데이터셋 메타데이터에서 테이블명 조회
     const db = getDb();
-    const datasetMeta = db
-      .prepare(
-        `
-      SELECT name, table_name FROM datasets WHERE id = ?
-    `
-      )
-      .get(datasetId) as { name: string; table_name: string } | undefined;
+    let datasets: Array<{ name: string; table_name: string }> = [];
 
-    if (!datasetMeta || !datasetMeta.table_name) {
+    if (groupId) {
+      // 그룹 내 모든 데이터셋 조회
+      const members = db
+        .prepare(
+          `
+        SELECT d.name, d.table_name
+        FROM datasets d
+        INNER JOIN dataset_group_members m ON d.id = m.dataset_id
+        WHERE m.group_id = ?
+        ORDER BY d.name
+      `
+        )
+        .all(groupId) as Array<{ name: string; table_name: string }>;
+      datasets = members;
+    } else if (datasetId) {
+      // 단일 데이터셋 조회
+      const datasetMeta = db
+        .prepare(
+          `
+        SELECT name, table_name FROM datasets WHERE id = ?
+      `
+        )
+        .get(datasetId) as { name: string; table_name: string } | undefined;
+
+      if (datasetMeta) {
+        datasets = [datasetMeta];
+      }
+    }
+
+    if (datasets.length === 0) {
       return NextResponse.json(
         { error: "데이터셋을 찾을 수 없습니다." },
         { status: 404 }
       );
     }
 
-    const tableName = datasetMeta.table_name; // 실제 테이블명
-    const displayTableName = datasetMeta.name; // 원본 파일명
-
-    // SQL에서 원본 파일명(displayTableName)을 실제 테이블명(tableName)으로 치환
+    // SQL에서 원본 파일명을 실제 테이블명으로 치환
     let finalSQL = sanitizedSQL;
 
-    // 원본 파일명을 실제 테이블명으로 치환 (대소문자 구분 없이)
-    const escapedDisplayName = displayTableName.replace(
-      /[.*+?^${}()|[\]\\]/g,
-      "\\$&"
-    );
-    finalSQL = finalSQL.replace(
-      new RegExp(`FROM\\s+["']?${escapedDisplayName}["']?`, "gi"),
-      `FROM "${tableName}"`
-    );
+    // 각 데이터셋의 원본 파일명을 실제 테이블명으로 치환
+    for (const dataset of datasets) {
+      const tableName = dataset.table_name;
+      const displayTableName = dataset.name;
 
-    // 백틱으로 감싼 경우도 처리
-    finalSQL = finalSQL.replace(
-      new RegExp(`FROM\\s+\`${escapedDisplayName}\``, "gi"),
-      `FROM "${tableName}"`
-    );
+      // 원본 파일명을 실제 테이블명으로 치환 (대소문자 구분 없이)
+      const escapedDisplayName = displayTableName.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&"
+      );
 
-    // FROM 절이 없거나 다른 테이블명이 있으면 실제 테이블명으로 교체
-    if (!/FROM\s+["'`]/.test(finalSQL)) {
-      // FROM 절이 없으면 추가
-      if (!/FROM/i.test(finalSQL)) {
-        finalSQL = finalSQL.replace(/SELECT/i, `SELECT * FROM "${tableName}"`);
-      } else {
-        // FROM 절은 있지만 테이블명이 다른 경우
-        finalSQL = finalSQL.replace(
-          /FROM\s+["']?[\w_]+["']?/i,
-          `FROM "${tableName}"`
-        );
-      }
+      // FROM 절에서 치환
+      finalSQL = finalSQL.replace(
+        new RegExp(`FROM\\s+["']?${escapedDisplayName}["']?`, "gi"),
+        `FROM "${tableName}"`
+      );
+
+      // JOIN 절에서 치환
+      finalSQL = finalSQL.replace(
+        new RegExp(`JOIN\\s+["']?${escapedDisplayName}["']?`, "gi"),
+        `JOIN "${tableName}"`
+      );
+      finalSQL = finalSQL.replace(
+        new RegExp(`INNER\\s+JOIN\\s+["']?${escapedDisplayName}["']?`, "gi"),
+        `INNER JOIN "${tableName}"`
+      );
+      finalSQL = finalSQL.replace(
+        new RegExp(`LEFT\\s+JOIN\\s+["']?${escapedDisplayName}["']?`, "gi"),
+        `LEFT JOIN "${tableName}"`
+      );
+      finalSQL = finalSQL.replace(
+        new RegExp(`RIGHT\\s+JOIN\\s+["']?${escapedDisplayName}["']?`, "gi"),
+        `RIGHT JOIN "${tableName}"`
+      );
+      finalSQL = finalSQL.replace(
+        new RegExp(
+          `FULL\\s+OUTER\\s+JOIN\\s+["']?${escapedDisplayName}["']?`,
+          "gi"
+        ),
+        `FULL OUTER JOIN "${tableName}"`
+      );
+
+      // 백틱으로 감싼 경우도 처리
+      finalSQL = finalSQL.replace(
+        new RegExp(`FROM\\s+\`${escapedDisplayName}\``, "gi"),
+        `FROM "${tableName}"`
+      );
+      finalSQL = finalSQL.replace(
+        new RegExp(`JOIN\\s+\`${escapedDisplayName}\``, "gi"),
+        `JOIN "${tableName}"`
+      );
     }
 
     // SQL 실행

@@ -36,6 +36,20 @@ export function getDb(): Database.Database {
         schema_json TEXT NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
+      
+      CREATE TABLE IF NOT EXISTS dataset_groups (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+      
+      CREATE TABLE IF NOT EXISTS dataset_group_members (
+        group_id TEXT NOT NULL,
+        dataset_id TEXT NOT NULL,
+        PRIMARY KEY (group_id, dataset_id),
+        FOREIGN KEY (group_id) REFERENCES dataset_groups(id),
+        FOREIGN KEY (dataset_id) REFERENCES datasets(id)
+      );
     `);
 
     // 기존 테이블에 컬럼이 없으면 추가 (마이그레이션)
@@ -58,6 +72,33 @@ export function getDb(): Database.Database {
         if (!tableInfo.sql.includes("pii_columns")) {
           db.exec(`ALTER TABLE datasets ADD COLUMN pii_columns TEXT;`);
         }
+      }
+
+      // dataset_groups 테이블 생성 확인
+      const groupsTableInfo = db
+        .prepare(
+          `
+        SELECT name FROM sqlite_master WHERE type='table' AND name='dataset_groups'
+      `
+        )
+        .get();
+
+      if (!groupsTableInfo) {
+        db.exec(`
+          CREATE TABLE IF NOT EXISTS dataset_groups (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          );
+          
+          CREATE TABLE IF NOT EXISTS dataset_group_members (
+            group_id TEXT NOT NULL,
+            dataset_id TEXT NOT NULL,
+            PRIMARY KEY (group_id, dataset_id),
+            FOREIGN KEY (group_id) REFERENCES dataset_groups(id),
+            FOREIGN KEY (dataset_id) REFERENCES datasets(id)
+          );
+        `);
       }
     } catch (e) {
       // 컬럼이 이미 존재하거나 다른 오류인 경우 무시

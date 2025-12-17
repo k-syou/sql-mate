@@ -1,30 +1,42 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { useState } from "react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Maximize2 } from 'lucide-react';
+} from "@/components/ui/dialog";
+import { Maximize2 } from "lucide-react";
 
 interface ResultTableProps {
   data: any[];
   columns: string[];
 }
 
-function TableContent({ data, columns, isFullScreen = false }: { data: any[]; columns: string[]; isFullScreen?: boolean }) {
-  return (
-    <div className={isFullScreen ? 'w-full h-full overflow-auto' : 'overflow-x-auto max-w-full'}>
-      <table className={`w-full text-sm ${isFullScreen ? 'min-w-max' : 'min-w-full table-fixed'}`}>
-        <thead className={isFullScreen ? 'sticky top-0 bg-background z-10 shadow-sm' : ''}>
-          <tr className="border-b">
+function TableContent({
+  data,
+  columns,
+  isFullScreen = false,
+}: {
+  data: any[];
+  columns: string[];
+  isFullScreen?: boolean;
+}) {
+  if (isFullScreen) {
+    // 다이얼로그에서는 외부 컨테이너에서 스크롤 처리하므로 여기서는 overflow 없음
+    return (
+      <table className="text-sm min-w-max">
+        <thead className="sticky top-0 z-50">
+          <tr className="border-b-2 border-border">
             {columns.map((col) => (
-              <th key={col} className={`text-left p-3 font-semibold bg-muted/50 ${isFullScreen ? 'whitespace-nowrap' : 'break-words'}`}>
+              <th
+                key={col}
+                className="text-left p-3 font-semibold bg-white dark:bg-gray-950 whitespace-nowrap border-r last:border-r-0 shadow-md backdrop-blur-sm"
+              >
                 {col}
               </th>
             ))}
@@ -34,13 +46,56 @@ function TableContent({ data, columns, isFullScreen = false }: { data: any[]; co
           {data.map((row, i) => (
             <tr key={i} className="border-b hover:bg-muted/50">
               {columns.map((col) => (
-                <td key={col} className={`p-3 ${isFullScreen ? 'whitespace-nowrap' : 'break-words overflow-hidden'}`}>
+                <td key={col} className="p-3 whitespace-nowrap">
+                  <div className="max-w-none">{String(row[col] ?? "")}</div>
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto max-w-full">
+      <table className="text-sm min-w-full table-fixed w-full">
+        <thead
+          className={
+            isFullScreen ? "sticky top-0 bg-background z-10 shadow-sm" : ""
+          }
+        >
+          <tr className="border-b">
+            {columns.map((col) => (
+              <th
+                key={col}
+                className={`text-left p-3 font-semibold bg-muted/50 ${
+                  isFullScreen ? "whitespace-nowrap" : "break-words"
+                }`}
+              >
+                {col}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((row, i) => (
+            <tr key={i} className="border-b hover:bg-muted/50">
+              {columns.map((col) => (
+                <td
+                  key={col}
+                  className={`p-3 ${
+                    isFullScreen
+                      ? "whitespace-nowrap"
+                      : "break-words overflow-hidden"
+                  }`}
+                >
                   {isFullScreen ? (
-                    <div className="max-w-none">{String(row[col] ?? '')}</div>
+                    <div className="max-w-none">{String(row[col] ?? "")}</div>
                   ) : (
-                    <div className="truncate" title={String(row[col] ?? '')}>
-                      {String(row[col] ?? '').slice(0, 100)}
-                      {String(row[col] ?? '').length > 100 && '...'}
+                    <div className="truncate" title={String(row[col] ?? "")}>
+                      {String(row[col] ?? "").slice(0, 100)}
+                      {String(row[col] ?? "").length > 100 && "..."}
                     </div>
                   )}
                 </td>
@@ -77,16 +132,18 @@ export function ResultTable({ data, columns }: ResultTableProps) {
               전체 보기
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-[95vw] max-h-[90vh] w-full flex flex-col">
-            <DialogHeader>
-              <DialogTitle>쿼리 결과</DialogTitle>
+          <DialogContent className="max-w-[95vw] max-h-[90vh] w-full flex flex-col p-0">
+            <DialogHeader className="px-6 pt-6 pb-4 border-b flex-shrink-0">
+              <DialogTitle>쿼리 결과 ({data.length}개 행)</DialogTitle>
             </DialogHeader>
-            <div className="flex-1 overflow-auto min-h-0 border rounded-lg">
+            <div className="flex-1 overflow-x-auto overflow-y-auto min-h-0 px-6 pb-4">
               <TableContent data={data} columns={columns} isFullScreen={true} />
             </div>
-            <p className="text-xs text-muted-foreground mt-2 text-center">
-              총 {data.length}개 행 표시
-            </p>
+            <div className="px-6 py-3 border-t flex-shrink-0">
+              <p className="text-xs text-muted-foreground text-center">
+                총 {data.length}개 행 표시
+              </p>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
@@ -94,4 +151,3 @@ export function ResultTable({ data, columns }: ResultTableProps) {
     </Card>
   );
 }
-

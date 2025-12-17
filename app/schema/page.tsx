@@ -446,10 +446,10 @@ export default function SchemaTrackPage() {
                           key={i}
                           variant="outline"
                           size="sm"
-                          className="w-full text-left justify-start"
+                          className="w-full text-left justify-start whitespace-normal break-words h-auto py-2 px-3"
                           onClick={() => handleSendMessage(rec)}
                         >
-                          {rec}
+                          <span className="break-words">{rec}</span>
                         </Button>
                       ))}
                     </div>

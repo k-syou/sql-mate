@@ -34,13 +34,17 @@ interface Message {
 export default function CSVTrackPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<any[]>([]);
-  const [piiReport, setPiiReport] = useState<any>(null);
-  const [piiActions, setPiiActions] = useState<
-    Record<string, "drop" | "mask" | "hash" | "none">
+  const [files, setFiles] = useState<File[]>([]);
+  const [filePreviews, setFilePreviews] = useState<Record<string, any[]>>({});
+  const [filePiiReports, setFilePiiReports] = useState<Record<string, any>>({});
+  const [filePiiActions, setFilePiiActions] = useState<
+    Record<string, Record<string, "drop" | "mask" | "hash" | "none">>
   >({});
   const [datasetId, setDatasetId] = useState<string | null>(null);
+  const [datasetGroupId, setDatasetGroupId] = useState<string | null>(null);
+  const [datasetInfo, setDatasetInfo] = useState<
+    Array<{ id: string; name: string; tableName: string }>
+  >([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [provider, setProvider] = useState("openai");
@@ -53,9 +57,10 @@ export default function CSVTrackPage() {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: { "text/csv": [".csv"] },
+    multiple: true,
     onDrop: (acceptedFiles) => {
       if (acceptedFiles.length > 0) {
-        handleFileUpload(acceptedFiles[0]);
+        handleFilesUpload(acceptedFiles);
       }
     },
   });
@@ -73,41 +78,58 @@ export default function CSVTrackPage() {
     if (storedModel) setModel(storedModel);
   }, []);
 
-  const handleFileUpload = async (uploadedFile: File) => {
-    setFile(uploadedFile);
+  const handleFilesUpload = async (uploadedFiles: File[]) => {
+    setFiles(uploadedFiles);
     setLoading(true);
 
     try {
-      const formData = new FormData();
-      formData.append("file", uploadedFile);
+      const newPreviews: Record<string, any[]> = {};
+      const newPiiReports: Record<string, any> = {};
+      const newPiiActions: Record<
+        string,
+        Record<string, "drop" | "mask" | "hash" | "none">
+      > = {};
 
-      const res = await fetch("/api/upload/csv", {
-        method: "POST",
-        body: formData,
-      });
+      // 각 파일별로 PII 탐지
+      for (const file of uploadedFiles) {
+        const formData = new FormData();
+        formData.append("file", file);
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "파일 업로드 실패");
-      }
-
-      setPreview(data.preview);
-      setPiiReport(data.piiReport);
-
-      // 각 컬럼별 기본 액션 설정 (suggestedAction 사용)
-      const initialActions: Record<string, "drop" | "mask" | "hash" | "none"> =
-        {};
-      if (data.piiReport && data.piiReport.columns) {
-        data.piiReport.columns.forEach((col: any) => {
-          initialActions[col.name] = col.suggestedAction || "drop";
+        const res = await fetch("/api/upload/csv", {
+          method: "POST",
+          body: formData,
         });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || `파일 ${file.name} 업로드 실패`);
+        }
+
+        const fileKey = file.name;
+        newPreviews[fileKey] = data.preview;
+        newPiiReports[fileKey] = data.piiReport;
+
+        // 각 컬럼별 기본 액션 설정
+        const initialActions: Record<
+          string,
+          "drop" | "mask" | "hash" | "none"
+        > = {};
+        if (data.piiReport && data.piiReport.columns) {
+          data.piiReport.columns.forEach((col: any) => {
+            initialActions[col.name] = col.suggestedAction || "drop";
+          });
+        }
+        newPiiActions[fileKey] = initialActions;
       }
-      setPiiActions(initialActions);
+
+      setFilePreviews(newPreviews);
+      setFilePiiReports(newPiiReports);
+      setFilePiiActions(newPiiActions);
 
       toast({
         title: "파일 업로드 완료",
-        description: `${data.totalRows}개 행이 감지되었습니다.`,
+        description: `${uploadedFiles.length}개 파일이 업로드되었습니다.`,
       });
     } catch (error: any) {
       toast({
@@ -131,41 +153,49 @@ export default function CSVTrackPage() {
   };
 
   const handleRemoveFile = () => {
-    setFile(null);
-    setPreview([]);
-    setPiiReport(null);
-    setPiiActions({});
-    setDatasetId(null);
-    setMessages([]);
-    setRecommendations([]);
+    // 이 함수는 더 이상 사용되지 않음 (개별 파일 제거는 UI에서 처리)
+    handleResetDataset();
   };
 
   const handleLoadSample = async () => {
     try {
       setLoading(true);
-      // 샘플 CSV 파일 가져오기
-      const response = await fetch(
-        "/samples/sqlmate_sample_orders_with_pii.csv"
-      );
-      if (!response.ok) {
+      // 두 개의 샘플 CSV 파일 가져오기
+      const [ordersResponse, sellersResponse] = await Promise.all([
+        fetch("/samples/sqlmate_sample_orders_with_pii.csv"),
+        fetch("/samples/sqlmate_sample_sellers.csv"),
+      ]);
+
+      if (!ordersResponse.ok || !sellersResponse.ok) {
         throw new Error("샘플 파일을 불러올 수 없습니다.");
       }
-      const csvText = await response.text();
+
+      const [ordersText, sellersText] = await Promise.all([
+        ordersResponse.text(),
+        sellersResponse.text(),
+      ]);
 
       // File 객체 생성
-      const blob = new Blob([csvText], { type: "text/csv" });
-      const sampleFile = new File(
-        [blob],
+      const ordersBlob = new Blob([ordersText], { type: "text/csv" });
+      const sellersBlob = new Blob([sellersText], { type: "text/csv" });
+
+      const ordersFile = new File(
+        [ordersBlob],
         "sqlmate_sample_orders_with_pii.csv",
         { type: "text/csv" }
       );
+      const sellersFile = new File(
+        [sellersBlob],
+        "sqlmate_sample_sellers.csv",
+        { type: "text/csv" }
+      );
 
-      // 파일 업로드 처리
-      await handleFileUpload(sampleFile);
+      // 두 파일을 동시에 업로드 처리
+      await handleFilesUpload([ordersFile, sellersFile]);
 
       toast({
         title: "샘플 데이터 로드 완료",
-        description: "샘플 CSV 파일이 로드되었습니다.",
+        description: "2개의 샘플 CSV 파일이 로드되었습니다.",
       });
     } catch (error: any) {
       toast({
@@ -184,11 +214,13 @@ export default function CSVTrackPage() {
         "데이터셋을 초기화하시겠습니까? 모든 데이터와 채팅 기록이 삭제됩니다."
       )
     ) {
-      setFile(null);
-      setPreview([]);
-      setPiiReport(null);
-      setPiiActions({});
+      setFiles([]);
+      setFilePreviews({});
+      setFilePiiReports({});
+      setFilePiiActions({});
       setDatasetId(null);
+      setDatasetGroupId(null);
+      setDatasetInfo([]);
       setMessages([]);
       setRecommendations([]);
       toast({
@@ -199,17 +231,30 @@ export default function CSVTrackPage() {
   };
 
   const handleProcessPII = async () => {
-    if (!file || !piiReport) return;
+    if (files.length === 0) return;
 
     setLoading(true);
     try {
+      // 여러 파일을 하나의 그룹으로 처리
       const formData = new FormData();
-      formData.append("file", file);
-      formData.append("name", file.name);
-      formData.append("piiActions", JSON.stringify(piiActions));
-      formData.append("piiReport", JSON.stringify(piiReport));
+      formData.append("files", JSON.stringify(files.map((f) => f.name)));
 
-      const res = await fetch("/api/upload/csv/process", {
+      // 각 파일별 정보 추가
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fileKey = file.name;
+        formData.append(`file_${i}`, file);
+        formData.append(
+          `piiActions_${i}`,
+          JSON.stringify(filePiiActions[fileKey] || {})
+        );
+        formData.append(
+          `piiReport_${i}`,
+          JSON.stringify(filePiiReports[fileKey])
+        );
+      }
+
+      const res = await fetch("/api/upload/csv/process-multiple", {
         method: "POST",
         body: formData,
       });
@@ -220,22 +265,39 @@ export default function CSVTrackPage() {
         throw new Error(data.error || "처리 실패");
       }
 
-      setDatasetId(data.datasetId);
+      setDatasetGroupId(data.groupId);
+      setDatasetInfo(data.datasets);
+      // 첫 번째 데이터셋 ID를 메인으로 사용 (하위 호환성)
+      if (data.datasets && data.datasets.length > 0) {
+        setDatasetId(data.datasets[0].id);
+      }
 
-      // 추천 질문 가져오기
-      const recRes = await fetch("/api/query/recommendations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ datasetId: data.datasetId }),
-      });
-      const recData = await recRes.json();
-      if (recData.recommendations) {
-        setRecommendations(recData.recommendations);
+      // 추천 질문 가져오기 (API 키가 있으면 LLM으로 생성)
+      try {
+        const recRes = await fetch("/api/query/recommendations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            datasetId: data.datasets?.[0]?.id,
+            groupId: data.groupId,
+            provider: apiKey ? provider : undefined,
+            model: apiKey ? model : undefined,
+            apiKey: apiKey || undefined,
+            baseURL: apiKey ? baseURL : undefined,
+          }),
+        });
+        const recData = await recRes.json();
+        if (recData.recommendations) {
+          setRecommendations(recData.recommendations);
+        }
+      } catch (recError) {
+        // 추천 질문 생성 실패는 무시 (선택적 기능)
+        console.warn("추천 질문 생성 실패:", recError);
       }
 
       toast({
         title: "처리 완료",
-        description: "데이터셋이 준비되었습니다. 이제 질문을 할 수 있습니다.",
+        description: `${files.length}개 파일이 준비되었습니다. 이제 JOIN 쿼리를 사용할 수 있습니다.`,
       });
     } catch (error: any) {
       toast({
@@ -249,7 +311,7 @@ export default function CSVTrackPage() {
   };
 
   const handleSendMessage = async (question: string) => {
-    if (!datasetId || !apiKey) {
+    if ((!datasetId && !datasetGroupId) || !apiKey) {
       toast({
         title: "오류",
         description:
@@ -274,7 +336,8 @@ export default function CSVTrackPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           question,
-          datasetId,
+          datasetId: datasetGroupId ? undefined : datasetId,
+          groupId: datasetGroupId || undefined,
           provider,
           model,
           apiKey,
@@ -294,7 +357,8 @@ export default function CSVTrackPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sql: genData.sql,
-          datasetId,
+          datasetId: datasetGroupId ? undefined : datasetId,
+          groupId: datasetGroupId || undefined,
         }),
       });
 
@@ -308,7 +372,8 @@ export default function CSVTrackPage() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               question: `${question} (이전 SQL 실행 오류: ${execData.error})`,
-              datasetId,
+              datasetId: datasetGroupId ? undefined : datasetId,
+              groupId: datasetGroupId || undefined,
               provider,
               model,
               apiKey,
@@ -325,7 +390,8 @@ export default function CSVTrackPage() {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 sql: retryData.sql,
-                datasetId,
+                datasetId: datasetGroupId ? undefined : datasetId,
+                groupId: datasetGroupId || undefined,
               }),
             });
 
@@ -459,7 +525,7 @@ export default function CSVTrackPage() {
                   <p className="text-sm text-muted-foreground">
                     {isDragActive
                       ? "파일을 놓으세요"
-                      : "CSV 파일을 드래그하거나 클릭하여 업로드"}
+                      : "CSV 파일을 드래그하거나 클릭하여 업로드 (여러 파일 선택 가능)"}
                   </p>
                 </div>
 
@@ -488,162 +554,225 @@ export default function CSVTrackPage() {
                   )}
                 </Button>
 
-                {preview.length > 0 && (
+                {files.length > 0 && (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold">업로드된 파일</h3>
-                        <span className="text-sm text-muted-foreground">
-                          ({file?.name})
-                        </span>
-                      </div>
+                      <h3 className="font-semibold">
+                        업로드된 파일 ({files.length}개)
+                      </h3>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={handleRemoveFile}
+                        onClick={handleResetDataset}
                         className="text-destructive hover:text-destructive"
                       >
                         <X className="w-4 h-4 mr-1" />
-                        제거
+                        모두 제거
                       </Button>
                     </div>
-                    <div>
-                      <h3 className="font-semibold mb-2">미리보기 (20행)</h3>
-                      <div className="border rounded-lg overflow-auto max-h-[200px]">
-                        <table className="w-full text-xs">
-                          <thead className="bg-muted">
-                            <tr>
-                              {Object.keys(preview[0] || {}).map((key) => (
-                                <th key={key} className="p-2 text-left">
-                                  {key}
-                                </th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {preview.slice(0, 5).map((row, i) => (
-                              <tr key={i} className="border-t">
-                                {Object.values(row).map((val: any, j) => (
-                                  <td key={j} className="p-2">
-                                    {String(val).slice(0, 50)}
-                                  </td>
-                                ))}
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+
+                    <div className="space-y-4 max-h-[600px] overflow-y-auto">
+                      {files.map((file, fileIndex) => {
+                        const fileKey = file.name;
+                        const preview = filePreviews[fileKey] || [];
+                        const piiReport = filePiiReports[fileKey];
+                        const piiActions = filePiiActions[fileKey] || {};
+
+                        return (
+                          <Card key={fileIndex} className="p-4">
+                            <div className="flex items-center justify-between mb-3">
+                              <h4 className="font-medium text-sm">
+                                {file.name}
+                              </h4>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  const newFiles = files.filter(
+                                    (_, i) => i !== fileIndex
+                                  );
+                                  const newPreviews = { ...filePreviews };
+                                  const newPiiReports = { ...filePiiReports };
+                                  const newPiiActions = { ...filePiiActions };
+                                  delete newPreviews[fileKey];
+                                  delete newPiiReports[fileKey];
+                                  delete newPiiActions[fileKey];
+                                  setFiles(newFiles);
+                                  setFilePreviews(newPreviews);
+                                  setFilePiiReports(newPiiReports);
+                                  setFilePiiActions(newPiiActions);
+                                }}
+                                className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            </div>
+
+                            {preview.length > 0 && (
+                              <div className="mb-3">
+                                <h5 className="text-xs font-medium mb-2">
+                                  미리보기 (5행)
+                                </h5>
+                                <div className="border rounded-lg overflow-auto max-h-[150px]">
+                                  <table className="w-full text-xs">
+                                    <thead className="bg-muted">
+                                      <tr>
+                                        {Object.keys(preview[0] || {}).map(
+                                          (key) => (
+                                            <th
+                                              key={key}
+                                              className="p-1 text-left"
+                                            >
+                                              {key}
+                                            </th>
+                                          )
+                                        )}
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {preview.slice(0, 5).map((row, i) => (
+                                        <tr key={i} className="border-t">
+                                          {Object.values(row).map(
+                                            (val: any, j) => (
+                                              <td key={j} className="p-1">
+                                                {String(val).slice(0, 30)}
+                                              </td>
+                                            )
+                                          )}
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                            )}
+
+                            {piiReport &&
+                              piiReport.columns &&
+                              piiReport.columns.length > 0 && (
+                                <div className="mb-3">
+                                  <h5 className="text-xs font-medium mb-2 flex items-center gap-1">
+                                    <AlertTriangle className="w-3 h-3 text-amber-600" />
+                                    PII 탐지 결과
+                                  </h5>
+                                  <div className="space-y-2 text-xs">
+                                    {piiReport.columns.map(
+                                      (col: any, i: number) => (
+                                        <div
+                                          key={i}
+                                          className="p-2 bg-amber-50 dark:bg-amber-950 rounded border"
+                                        >
+                                          <div className="mb-1">
+                                            <p className="font-medium">
+                                              {col.name}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">
+                                              {col.reason}
+                                            </p>
+                                          </div>
+                                          <div className="flex gap-1 flex-wrap mt-1">
+                                            <Button
+                                              size="sm"
+                                              variant={
+                                                piiActions[col.name] === "none"
+                                                  ? "default"
+                                                  : "outline"
+                                              }
+                                              onClick={() =>
+                                                setFilePiiActions({
+                                                  ...filePiiActions,
+                                                  [fileKey]: {
+                                                    ...piiActions,
+                                                    [col.name]: "none",
+                                                  },
+                                                })
+                                              }
+                                              className="text-xs h-6 px-2"
+                                            >
+                                              보관
+                                            </Button>
+                                            <Button
+                                              size="sm"
+                                              variant={
+                                                piiActions[col.name] === "drop"
+                                                  ? "default"
+                                                  : "outline"
+                                              }
+                                              onClick={() =>
+                                                setFilePiiActions({
+                                                  ...filePiiActions,
+                                                  [fileKey]: {
+                                                    ...piiActions,
+                                                    [col.name]: "drop",
+                                                  },
+                                                })
+                                              }
+                                              className="text-xs h-6 px-2"
+                                            >
+                                              Drop
+                                            </Button>
+                                            <Button
+                                              size="sm"
+                                              variant={
+                                                piiActions[col.name] === "mask"
+                                                  ? "default"
+                                                  : "outline"
+                                              }
+                                              onClick={() =>
+                                                setFilePiiActions({
+                                                  ...filePiiActions,
+                                                  [fileKey]: {
+                                                    ...piiActions,
+                                                    [col.name]: "mask",
+                                                  },
+                                                })
+                                              }
+                                              className="text-xs h-6 px-2"
+                                            >
+                                              Mask
+                                            </Button>
+                                            <Button
+                                              size="sm"
+                                              variant={
+                                                piiActions[col.name] === "hash"
+                                                  ? "default"
+                                                  : "outline"
+                                              }
+                                              onClick={() =>
+                                                setFilePiiActions({
+                                                  ...filePiiActions,
+                                                  [fileKey]: {
+                                                    ...piiActions,
+                                                    [col.name]: "hash",
+                                                  },
+                                                })
+                                              }
+                                              className="text-xs h-6 px-2"
+                                            >
+                                              Hash
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      )
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
+                            {piiReport &&
+                              (!piiReport.columns ||
+                                piiReport.columns.length === 0) && (
+                                <div className="p-2 bg-green-50 dark:bg-green-950 rounded-lg flex items-center gap-2 text-xs">
+                                  <CheckCircle2 className="w-4 h-4 text-green-600" />
+                                  <p>PII가 탐지되지 않았습니다.</p>
+                                </div>
+                              )}
+                          </Card>
+                        );
+                      })}
                     </div>
 
-                    {piiReport && piiReport.columns.length > 0 && (
-                      <div>
-                        <h3 className="font-semibold mb-2 flex items-center gap-2">
-                          <AlertTriangle className="w-4 h-4 text-amber-600" />
-                          PII 탐지 결과
-                        </h3>
-                        <div className="space-y-3 text-sm">
-                          {piiReport.columns.map((col: any, i: number) => (
-                            <div
-                              key={i}
-                              className="p-3 bg-amber-50 dark:bg-amber-950 rounded border"
-                            >
-                              <div className="flex items-start justify-between mb-2">
-                                <div className="flex-1">
-                                  <p className="font-medium">{col.name}</p>
-                                  <p className="text-xs text-muted-foreground mt-1">
-                                    {col.reason}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="mt-2">
-                                <p className="text-xs font-medium mb-1">
-                                  처리 방식:
-                                </p>
-                                <div className="flex gap-1 flex-wrap">
-                                  <Button
-                                    size="sm"
-                                    variant={
-                                      piiActions[col.name] === "none"
-                                        ? "default"
-                                        : "outline"
-                                    }
-                                    onClick={() =>
-                                      setPiiActions({
-                                        ...piiActions,
-                                        [col.name]: "none",
-                                      })
-                                    }
-                                    className="text-xs h-7"
-                                  >
-                                    보관
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant={
-                                      piiActions[col.name] === "drop"
-                                        ? "default"
-                                        : "outline"
-                                    }
-                                    onClick={() =>
-                                      setPiiActions({
-                                        ...piiActions,
-                                        [col.name]: "drop",
-                                      })
-                                    }
-                                    className="text-xs h-7"
-                                  >
-                                    Drop
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant={
-                                      piiActions[col.name] === "mask"
-                                        ? "default"
-                                        : "outline"
-                                    }
-                                    onClick={() =>
-                                      setPiiActions({
-                                        ...piiActions,
-                                        [col.name]: "mask",
-                                      })
-                                    }
-                                    className="text-xs h-7"
-                                  >
-                                    Mask
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant={
-                                      piiActions[col.name] === "hash"
-                                        ? "default"
-                                        : "outline"
-                                    }
-                                    onClick={() =>
-                                      setPiiActions({
-                                        ...piiActions,
-                                        [col.name]: "hash",
-                                      })
-                                    }
-                                    className="text-xs h-7"
-                                  >
-                                    Hash
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {piiReport && piiReport.columns.length === 0 && (
-                      <div className="p-4 bg-green-50 dark:bg-green-950 rounded-lg flex items-center gap-2">
-                        <CheckCircle2 className="w-5 h-5 text-green-600" />
-                        <p className="text-sm">PII가 탐지되지 않았습니다.</p>
-                      </div>
-                    )}
-
-                    {piiReport && (
+                    {files.length > 0 && (
                       <Button
                         className="w-full"
                         onClick={handleProcessPII}
@@ -655,7 +784,7 @@ export default function CSVTrackPage() {
                             처리 중...
                           </>
                         ) : (
-                          "데이터셋 준비하기"
+                          `${files.length}개 파일 데이터셋 준비하기`
                         )}
                       </Button>
                     )}
@@ -682,12 +811,20 @@ export default function CSVTrackPage() {
               <CardContent>
                 <div className="flex items-center gap-2 text-green-600 mb-4">
                   <CheckCircle2 className="w-5 h-5" />
-                  <p className="text-sm">데이터셋이 준비되었습니다.</p>
+                  <p className="text-sm">
+                    {datasetInfo.length > 1
+                      ? `${datasetInfo.length}개 파일이 준비되었습니다. JOIN 쿼리를 사용할 수 있습니다.`
+                      : "데이터셋이 준비되었습니다."}
+                  </p>
                 </div>
-                {file && (
-                  <div className="mb-4 p-2 bg-muted rounded text-sm">
-                    <p className="text-muted-foreground">업로드된 파일:</p>
-                    <p className="font-medium">{file.name}</p>
+                {datasetInfo.length > 0 && (
+                  <div className="mb-4 space-y-2">
+                    <p className="text-sm font-medium">업로드된 파일:</p>
+                    {datasetInfo.map((info, i) => (
+                      <div key={i} className="p-2 bg-muted rounded text-sm">
+                        <p className="font-medium">{info.name}</p>
+                      </div>
+                    ))}
                   </div>
                 )}
                 {recommendations.length > 0 && (
@@ -699,10 +836,10 @@ export default function CSVTrackPage() {
                           key={i}
                           variant="outline"
                           size="sm"
-                          className="w-full text-left justify-start"
+                          className="w-full text-left justify-start whitespace-normal break-words h-auto py-2 px-3"
                           onClick={() => handleSendMessage(rec)}
                         >
-                          {rec}
+                          <span className="break-words">{rec}</span>
                         </Button>
                       ))}
                     </div>

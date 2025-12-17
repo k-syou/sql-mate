@@ -1,0 +1,5 @@
+seller_id,seller_name,plan,tier,commission_rate,category_focus,hq_region,support_manager,onboarded_at,is_active
+S001,PaperCloud,Starter,Silver,0.08,Stationery,Seoul,Ara,2023-11-28,1
+S002,GlowMarket,Growth,Gold,0.06,Stationery,Daegu,Jisoo,2023-04-07,1
+S003,ByteNest,Starter,Silver,0.08,Electronics,Seoul,Jisoo,2023-02-08,1
+S004,HomeBuddy,Pro,Silver,0.04,Stationery,Daegu,Mina,2023-04-03,1

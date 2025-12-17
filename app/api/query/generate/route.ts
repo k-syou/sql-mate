@@ -9,8 +9,16 @@ export const maxDuration = 30;
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { question, datasetId, schemaId, provider, model, apiKey, baseURL } =
-      body;
+    const {
+      question,
+      datasetId,
+      groupId,
+      schemaId,
+      provider,
+      model,
+      apiKey,
+      baseURL,
+    } = body;
 
     if (!question) {
       return NextResponse.json(
@@ -19,9 +27,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!datasetId && !schemaId) {
+    if (!datasetId && !groupId && !schemaId) {
       return NextResponse.json(
-        { error: "datasetId 또는 schemaId가 필요합니다." },
+        { error: "datasetId, groupId 또는 schemaId가 필요합니다." },
         { status: 400 }
       );
     }
@@ -35,101 +43,135 @@ export async function POST(request: NextRequest) {
 
     let schemaPrompt = "";
 
-    if (datasetId) {
+    if (datasetId || groupId) {
       // CSV 트랙: 데이터셋에서 스키마 추출
       const db = getDb();
 
-      // 데이터셋 메타데이터 조회
-      const datasetMeta = db
-        .prepare(
-          `
-        SELECT name, table_name, pii_action, pii_columns FROM datasets WHERE id = ?
-      `
-        )
-        .get(datasetId) as
-        | {
-            name: string;
-            table_name: string;
-            pii_action: string | null;
-            pii_columns: string | null;
-          }
-        | undefined;
+      let datasets: Array<{
+        id: string;
+        name: string;
+        table_name: string;
+        pii_action: string | null;
+        pii_columns: string | null;
+      }> = [];
 
-      if (!datasetMeta || !datasetMeta.table_name) {
+      if (groupId) {
+        // 그룹 내 모든 데이터셋 조회
+        const members = db
+          .prepare(
+            `
+          SELECT d.id, d.name, d.table_name, d.pii_action, d.pii_columns
+          FROM datasets d
+          INNER JOIN dataset_group_members m ON d.id = m.dataset_id
+          WHERE m.group_id = ?
+          ORDER BY d.name
+        `
+          )
+          .all(groupId) as Array<{
+          id: string;
+          name: string;
+          table_name: string;
+          pii_action: string | null;
+          pii_columns: string | null;
+        }>;
+        datasets = members;
+      } else if (datasetId) {
+        // 단일 데이터셋 조회
+        const datasetMeta = db
+          .prepare(
+            `
+          SELECT name, table_name, pii_action, pii_columns FROM datasets WHERE id = ?
+        `
+          )
+          .get(datasetId) as
+          | {
+              name: string;
+              table_name: string;
+              pii_action: string | null;
+              pii_columns: string | null;
+            }
+          | undefined;
+
+        if (datasetMeta) {
+          datasets = [
+            {
+              id: datasetId,
+              ...datasetMeta,
+            },
+          ];
+        }
+      }
+
+      if (datasets.length === 0) {
         return NextResponse.json(
           { error: "데이터셋을 찾을 수 없습니다." },
           { status: 404 }
         );
       }
 
-      const tableName = datasetMeta.table_name; // 실제 테이블명 (실행 시 사용)
-      const displayTableName = datasetMeta.name; // 원본 파일명 (SQL 표시용)
-      const piiAction = datasetMeta.pii_action;
-      const piiColumnsJson = datasetMeta.pii_columns;
-      const piiColumns: string[] = piiColumnsJson
-        ? JSON.parse(piiColumnsJson)
-        : [];
-
-      // 테이블 정보 확인
-      const tableInfo = db
-        .prepare(
-          `
-        SELECT sql FROM sqlite_master WHERE type='table' AND name=?
-      `
-        )
-        .get(tableName) as { sql: string } | undefined;
-
-      if (!tableInfo) {
-        return NextResponse.json(
-          { error: "테이블을 찾을 수 없습니다." },
-          { status: 404 }
-        );
-      }
-
-      // 테이블 정보에서 컬럼 추출
-      const columns = db
-        .prepare(`PRAGMA table_info("${tableName}")`)
-        .all() as Array<{
-        name: string;
-        type: string;
-        notnull: number;
-      }>;
-
-      // PII 처리 정보 포함
-      const availableColumns = columns.filter((col) => col.name !== "id");
-      const piiProcessedColumns = availableColumns.filter((col) =>
-        piiColumns.includes(col.name)
-      );
-      const normalColumns = availableColumns.filter(
-        (col) => !piiColumns.includes(col.name)
-      );
-
       schemaPrompt = `다음은 데이터베이스 스키마입니다:\n\n`;
-      schemaPrompt += `테이블: ${displayTableName} (실제 테이블명: ${tableName})\n`;
-      schemaPrompt += `  중요: SQL 생성 시 테이블명은 반드시 "${displayTableName}"을 사용하세요.\n`;
-      schemaPrompt += `  전체 컬럼:\n`;
-      for (const col of availableColumns) {
-        const isPII = piiColumns.includes(col.name);
-        const piiStatus = isPII ? ` [PII 처리됨: ${piiAction}]` : "";
-        schemaPrompt += `    - ${col.name} (${
-          col.type || "TEXT"
-        })${piiStatus}\n`;
-      }
+      schemaPrompt += `사용 가능한 테이블 ${datasets.length}개:\n\n`;
 
-      if (piiProcessedColumns.length > 0) {
-        schemaPrompt += `\n  중요: 다음 컬럼들은 PII(개인정보)로 인식되어 ${piiAction} 처리되었습니다:\n`;
-        for (const col of piiProcessedColumns) {
-          schemaPrompt += `    - ${col.name}\n`;
+      // 각 테이블 정보 추가
+      for (const dataset of datasets) {
+        const tableName = dataset.table_name;
+        const displayTableName = dataset.name;
+        const piiAction = dataset.pii_action;
+        const piiColumnsJson = dataset.pii_columns;
+        const piiColumns: string[] = piiColumnsJson
+          ? JSON.parse(piiColumnsJson)
+          : [];
+
+        // 테이블 정보에서 컬럼 추출
+        const columns = db
+          .prepare(`PRAGMA table_info("${tableName}")`)
+          .all() as Array<{
+          name: string;
+          type: string;
+          notnull: number;
+        }>;
+
+        const availableColumns = columns.filter((col) => col.name !== "id");
+        const piiProcessedColumns = availableColumns.filter((col) =>
+          piiColumns.includes(col.name)
+        );
+
+        schemaPrompt += `테이블: ${displayTableName}\n`;
+        schemaPrompt += `  중요: SQL 생성 시 테이블명은 반드시 "${displayTableName}"을 사용하세요.\n`;
+        schemaPrompt += `  전체 컬럼:\n`;
+        for (const col of availableColumns) {
+          const isPII = piiColumns.includes(col.name);
+          const piiStatus = isPII ? ` [PII 처리됨: ${piiAction}]` : "";
+          schemaPrompt += `    - ${col.name} (${
+            col.type || "TEXT"
+          })${piiStatus}\n`;
         }
-        schemaPrompt += `\n  사용자 질문에서 "PII 처리된 컬럼 제외", "hash/drop/mask 처리된 컬럼 제외" 등의 요청이 있으면,\n`;
-        schemaPrompt += `  위에 나열된 PII 처리된 컬럼들을 SELECT 절에서 제외해야 합니다.\n`;
+
+        if (piiProcessedColumns.length > 0) {
+          schemaPrompt += `  PII 처리된 컬럼: ${piiProcessedColumns
+            .map((c) => c.name)
+            .join(", ")}\n`;
+        }
+        schemaPrompt += `\n`;
       }
 
-      schemaPrompt += `\n규칙:\n`;
+      // JOIN 관련 규칙 추가
+      if (datasets.length > 1) {
+        schemaPrompt += `JOIN 규칙:\n`;
+        schemaPrompt += `- 여러 테이블을 조인할 수 있습니다.\n`;
+        schemaPrompt += `- JOIN, INNER JOIN, LEFT JOIN, RIGHT JOIN, FULL OUTER JOIN을 사용할 수 있습니다.\n`;
+        schemaPrompt += `- 각 테이블은 원본 파일명(위에 나열된 테이블명)으로 참조하세요.\n`;
+        schemaPrompt += `- 예: SELECT * FROM ${datasets[0].name} JOIN ${
+          datasets[1]?.name || "table2"
+        } ON ...\n`;
+        schemaPrompt += `\n`;
+      }
+
+      schemaPrompt += `일반 규칙:\n`;
       schemaPrompt += `- SELECT 문만 생성하세요.\n`;
       schemaPrompt += `- INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, TRUNCATE는 사용하지 마세요.\n`;
       schemaPrompt += `- LIMIT가 없으면 자동으로 LIMIT 200이 추가됩니다.\n`;
-      schemaPrompt += `- 테이블 이름은 반드시 "${displayTableName}"을 사용하세요. (실제 테이블명 "${tableName}"은 사용하지 마세요)\n`;
+      schemaPrompt += `- 테이블 이름은 반드시 위에 나열된 원본 파일명을 사용하세요.\n`;
       schemaPrompt += `- "상위 N개", "최상위 N개", "처음 N개" 등의 표현은 ORDER BY와 LIMIT를 사용하세요.\n`;
       schemaPrompt += `- "전체 컬럼" 또는 "모든 컬럼"을 요청할 때는 SELECT *를 사용할 수 있지만,\n`;
       schemaPrompt += `  PII 처리된 컬럼을 제외하라는 요청이 있으면 명시적으로 컬럼을 나열하세요.\n`;
