@@ -43,11 +43,12 @@ export async function POST(request: NextRequest) {
       const datasetMeta = db
         .prepare(
           `
-        SELECT table_name, pii_action, pii_columns FROM datasets WHERE id = ?
+        SELECT name, table_name, pii_action, pii_columns FROM datasets WHERE id = ?
       `
         )
         .get(datasetId) as
         | {
+            name: string;
             table_name: string;
             pii_action: string | null;
             pii_columns: string | null;
@@ -61,7 +62,8 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const tableName = datasetMeta.table_name;
+      const tableName = datasetMeta.table_name; // 실제 테이블명 (실행 시 사용)
+      const displayTableName = datasetMeta.name; // 원본 파일명 (SQL 표시용)
       const piiAction = datasetMeta.pii_action;
       const piiColumnsJson = datasetMeta.pii_columns;
       const piiColumns: string[] = piiColumnsJson
@@ -103,7 +105,8 @@ export async function POST(request: NextRequest) {
       );
 
       schemaPrompt = `다음은 데이터베이스 스키마입니다:\n\n`;
-      schemaPrompt += `테이블: ${tableName}\n`;
+      schemaPrompt += `테이블: ${displayTableName} (실제 테이블명: ${tableName})\n`;
+      schemaPrompt += `  중요: SQL 생성 시 테이블명은 반드시 "${displayTableName}"을 사용하세요.\n`;
       schemaPrompt += `  전체 컬럼:\n`;
       for (const col of availableColumns) {
         const isPII = piiColumns.includes(col.name);
@@ -126,7 +129,7 @@ export async function POST(request: NextRequest) {
       schemaPrompt += `- SELECT 문만 생성하세요.\n`;
       schemaPrompt += `- INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, TRUNCATE는 사용하지 마세요.\n`;
       schemaPrompt += `- LIMIT가 없으면 자동으로 LIMIT 200이 추가됩니다.\n`;
-      schemaPrompt += `- 테이블 이름은 "${tableName}"입니다.\n`;
+      schemaPrompt += `- 테이블 이름은 반드시 "${displayTableName}"을 사용하세요. (실제 테이블명 "${tableName}"은 사용하지 마세요)\n`;
       schemaPrompt += `- "상위 N개", "최상위 N개", "처음 N개" 등의 표현은 ORDER BY와 LIMIT를 사용하세요.\n`;
       schemaPrompt += `- "전체 컬럼" 또는 "모든 컬럼"을 요청할 때는 SELECT *를 사용할 수 있지만,\n`;
       schemaPrompt += `  PII 처리된 컬럼을 제외하라는 요청이 있으면 명시적으로 컬럼을 나열하세요.\n`;

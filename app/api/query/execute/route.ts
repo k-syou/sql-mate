@@ -37,10 +37,10 @@ export async function POST(request: NextRequest) {
     const datasetMeta = db
       .prepare(
         `
-      SELECT table_name FROM datasets WHERE id = ?
+      SELECT name, table_name FROM datasets WHERE id = ?
     `
       )
-      .get(datasetId) as { table_name: string } | undefined;
+      .get(datasetId) as { name: string; table_name: string } | undefined;
 
     if (!datasetMeta || !datasetMeta.table_name) {
       return NextResponse.json(
@@ -49,23 +49,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const tableName = datasetMeta.table_name;
+    const tableName = datasetMeta.table_name; // 실제 테이블명
+    const displayTableName = datasetMeta.name; // 원본 파일명
 
-    // 테이블명이 명시되지 않은 경우 조회한 테이블명 사용
+    // SQL에서 원본 파일명(displayTableName)을 실제 테이블명(tableName)으로 치환
     let finalSQL = sanitizedSQL;
-    if (!/FROM\s+["']?dataset_/i.test(sanitizedSQL)) {
-      // FROM 절이 없거나 dataset_로 시작하지 않으면 추가
-      finalSQL = sanitizedSQL.replace(/FROM\s+(\w+)/i, `FROM "${tableName}"`);
-      // FROM 절이 아예 없으면 추가
+
+    // 원본 파일명을 실제 테이블명으로 치환 (대소문자 구분 없이)
+    const escapedDisplayName = displayTableName.replace(
+      /[.*+?^${}()|[\]\\]/g,
+      "\\$&"
+    );
+    finalSQL = finalSQL.replace(
+      new RegExp(`FROM\\s+["']?${escapedDisplayName}["']?`, "gi"),
+      `FROM "${tableName}"`
+    );
+
+    // 백틱으로 감싼 경우도 처리
+    finalSQL = finalSQL.replace(
+      new RegExp(`FROM\\s+\`${escapedDisplayName}\``, "gi"),
+      `FROM "${tableName}"`
+    );
+
+    // FROM 절이 없거나 다른 테이블명이 있으면 실제 테이블명으로 교체
+    if (!/FROM\s+["'`]/.test(finalSQL)) {
+      // FROM 절이 없으면 추가
       if (!/FROM/i.test(finalSQL)) {
         finalSQL = finalSQL.replace(/SELECT/i, `SELECT * FROM "${tableName}"`);
+      } else {
+        // FROM 절은 있지만 테이블명이 다른 경우
+        finalSQL = finalSQL.replace(
+          /FROM\s+["']?[\w_]+["']?/i,
+          `FROM "${tableName}"`
+        );
       }
-    } else {
-      // 이미 dataset_가 있으면 실제 테이블명으로 교체
-      finalSQL = sanitizedSQL.replace(
-        /FROM\s+["']?dataset_\w+/i,
-        `FROM "${tableName}"`
-      );
     }
 
     // SQL 실행

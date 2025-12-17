@@ -17,6 +17,8 @@ import {
   AlertTriangle,
   Loader2,
   X,
+  Copy,
+  Check,
 } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 
@@ -46,6 +48,7 @@ export default function CSVTrackPage() {
   const [apiKey, setApiKey] = useState("");
   const [baseURL, setBaseURL] = useState("");
   const [recommendations, setRecommendations] = useState<string[]>([]);
+  const [copiedSql, setCopiedSql] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -115,6 +118,16 @@ export default function CSVTrackPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCopySQL = (sql: string) => {
+    navigator.clipboard.writeText(sql);
+    setCopiedSql(sql);
+    toast({
+      title: "복사됨",
+      description: "SQL이 클립보드에 복사되었습니다.",
+    });
+    setTimeout(() => setCopiedSql(null), 2000);
   };
 
   const handleRemoveFile = () => {
@@ -715,6 +728,27 @@ export default function CSVTrackPage() {
                 {messages.map((msg, i) => (
                   <div key={i}>
                     <ChatMessage {...msg} />
+                    {msg.sql && (
+                      <div className="mt-2 flex justify-end">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleCopySQL(msg.sql!)}
+                        >
+                          {copiedSql === msg.sql ? (
+                            <>
+                              <Check className="w-4 h-4 mr-2" />
+                              복사됨
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-4 h-4 mr-2" />
+                              SQL 복사
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    )}
                     {msg.data && msg.data.length > 0 && (
                       <ResultTable
                         data={msg.data}

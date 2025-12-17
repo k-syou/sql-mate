@@ -80,12 +80,15 @@ export async function POST(request: NextRequest) {
       ? (piiActions[piiColumns[0]] || 'drop')
       : 'none';
     
+    // 원본 파일명 저장 (확장자 제거)
+    const originalFileName = file.name.replace(/\.[^/.]+$/, '');
+    
     db.prepare(`
       INSERT INTO datasets (id, name, table_name, pii_action, pii_columns) 
       VALUES (?, ?, ?, ?, ?)
     `).run(
       datasetId, 
-      datasetName, 
+      originalFileName, // 원본 파일명 저장
       fullTableName,
       piiColumns.length > 1 ? 'mixed' : piiAction,
       JSON.stringify(piiColumns)
