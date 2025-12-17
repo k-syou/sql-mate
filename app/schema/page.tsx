@@ -9,7 +9,7 @@ import { ChatMessage } from '@/components/chat-message';
 import { ChatInput } from '@/components/chat-input';
 import { ModelSelector } from '@/components/model-selector';
 import { useToast } from '@/components/ui/use-toast';
-import { Upload, ArrowLeft, CheckCircle2, Loader2, Copy, Check } from 'lucide-react';
+import { Upload, ArrowLeft, CheckCircle2, Loader2, Copy, Check, X } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import type { SchemaData } from '@/lib/schemaPrompt';
 
@@ -26,6 +26,7 @@ export default function SchemaTrackPage() {
   const { toast } = useToast();
   const [schema, setSchema] = useState<SchemaData | null>(null);
   const [schemaId, setSchemaId] = useState<string | null>(null);
+  const [schemaFileName, setSchemaFileName] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [recommendations, setRecommendations] = useState<string[]>([]);
@@ -84,6 +85,7 @@ export default function SchemaTrackPage() {
       }
 
       setSchemaId(data.schemaId);
+      setSchemaFileName(file.name);
 
       // 추천 질문 가져오기 (API 키가 있으면)
       if (apiKey) {
@@ -136,8 +138,9 @@ export default function SchemaTrackPage() {
       const parsed = JSON.parse(jsonText);
       
       // File 객체 생성
+      const sampleFileName = 'sqlmate_sample_schema.json';
       const blob = new Blob([jsonText], { type: 'application/json' });
-      const sampleFile = new File([blob], 'sqlmate_sample_schema.json', { type: 'application/json' });
+      const sampleFile = new File([blob], sampleFileName, { type: 'application/json' });
       
       // 파일 업로드 처리
       await handleFileUpload(sampleFile);
@@ -231,6 +234,18 @@ export default function SchemaTrackPage() {
       description: 'SQL이 클립보드에 복사되었습니다.',
     });
     setTimeout(() => setCopiedSql(null), 2000);
+  };
+
+  const handleRemoveSchema = () => {
+    setSchema(null);
+    setSchemaId(null);
+    setSchemaFileName(null);
+    setMessages([]);
+    setRecommendations([]);
+    toast({
+      title: '스키마 제거됨',
+      description: '업로드된 스키마가 제거되었습니다.',
+    });
   };
 
   const renderSchemaTree = () => {
@@ -396,7 +411,23 @@ export default function SchemaTrackPage() {
           ) : (
             <Card>
               <CardHeader>
-                <CardTitle>스키마 구조</CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle>스키마 구조</CardTitle>
+                  {schemaFileName && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">{schemaFileName}</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleRemoveSchema}
+                        className="h-8 w-8"
+                        title="스키마 제거"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-2 text-green-600 mb-4">
