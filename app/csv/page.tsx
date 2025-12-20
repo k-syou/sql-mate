@@ -464,48 +464,50 @@ export default function CSVTrackPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <div className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => router.push("/")}
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-            <h1 className="text-2xl font-bold">CSV 트랙</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <Input
-              type="password"
-              placeholder="LLM API Key"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              className={`w-[200px] ${
-                !apiKey ? "border-red-500 focus-visible:ring-red-500" : ""
-              }`}
-            />
-            {provider === "custom" && (
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => router.push("/")}
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+              <h1 className="text-base md:text-lg lg:text-2xl font-bold">CSV 트랙</h1>
+            </div>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
               <Input
-                type="text"
-                placeholder="Base URL"
-                value={baseURL}
-                onChange={(e) => setBaseURL(e.target.value)}
-                className="w-[200px]"
+                type="password"
+                placeholder="LLM API Key"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                className={`w-full sm:w-[200px] ${
+                  !apiKey ? "border-red-500 focus-visible:ring-red-500" : ""
+                }`}
               />
-            )}
-            <ModelSelector
-              provider={provider}
-              model={model}
-              onProviderChange={setProvider}
-              onModelChange={setModel}
-            />
+              {provider === "custom" && (
+                <Input
+                  type="text"
+                  placeholder="Base URL"
+                  value={baseURL}
+                  onChange={(e) => setBaseURL(e.target.value)}
+                  className="w-full sm:w-[200px]"
+                />
+              )}
+              <ModelSelector
+                provider={provider}
+                model={model}
+                onProviderChange={setProvider}
+                onModelChange={setModel}
+              />
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="flex-1 container mx-auto px-4 py-6 flex gap-6">
-        <div className="w-1/3 space-y-4">
+      <div className="flex-1 container mx-auto px-4 py-6 flex flex-col lg:flex-row gap-6">
+        <div className="w-full lg:w-1/3 space-y-4">
           {!datasetId ? (
             <Card>
               <CardHeader>
@@ -613,15 +615,15 @@ export default function CSVTrackPage() {
                                 <h5 className="text-xs font-medium mb-2">
                                   미리보기 (5행)
                                 </h5>
-                                <div className="border rounded-lg overflow-auto max-h-[150px]">
-                                  <table className="w-full text-xs">
+                                <div className="border rounded-lg overflow-x-auto max-h-[150px]">
+                                  <table className="w-full text-xs min-w-max">
                                     <thead className="bg-muted">
                                       <tr>
                                         {Object.keys(preview[0] || {}).map(
                                           (key) => (
                                             <th
                                               key={key}
-                                              className="p-1 text-left"
+                                              className="p-1 sm:p-2 text-left whitespace-nowrap"
                                             >
                                               {key}
                                             </th>
@@ -634,8 +636,14 @@ export default function CSVTrackPage() {
                                         <tr key={i} className="border-t">
                                           {Object.values(row).map(
                                             (val: any, j) => (
-                                              <td key={j} className="p-1">
-                                                {String(val).slice(0, 30)}
+                                              <td key={j} className="p-1 sm:p-2 whitespace-nowrap">
+                                                <span className="hidden sm:inline">
+                                                  {String(val).slice(0, 30)}
+                                                </span>
+                                                <span className="sm:hidden">
+                                                  {String(val).slice(0, 15)}
+                                                  {String(val).length > 15 && "..."}
+                                                </span>
                                               </td>
                                             )
                                           )}
@@ -687,7 +695,7 @@ export default function CSVTrackPage() {
                                                   },
                                                 })
                                               }
-                                              className="text-xs h-6 px-2"
+                                              className="text-xs h-6 sm:h-7 px-2 text-[10px] sm:text-xs"
                                             >
                                               보관
                                             </Button>
@@ -707,7 +715,7 @@ export default function CSVTrackPage() {
                                                   },
                                                 })
                                               }
-                                              className="text-xs h-6 px-2"
+                                              className="text-xs h-6 sm:h-7 px-2 text-[10px] sm:text-xs"
                                             >
                                               Drop
                                             </Button>
@@ -727,7 +735,7 @@ export default function CSVTrackPage() {
                                                   },
                                                 })
                                               }
-                                              className="text-xs h-6 px-2"
+                                              className="text-xs h-6 sm:h-7 px-2 text-[10px] sm:text-xs"
                                             >
                                               Mask
                                             </Button>
@@ -747,7 +755,7 @@ export default function CSVTrackPage() {
                                                   },
                                                 })
                                               }
-                                              className="text-xs h-6 px-2"
+                                              className="text-xs h-6 sm:h-7 px-2 text-[10px] sm:text-xs"
                                             >
                                               Hash
                                             </Button>
@@ -850,7 +858,7 @@ export default function CSVTrackPage() {
           )}
         </div>
 
-        <div className="flex-1 flex flex-col">
+        <div className="w-full lg:flex-1 flex flex-col">
           <Card className="flex-1 flex flex-col">
             <CardHeader>
               <CardTitle>채팅</CardTitle>

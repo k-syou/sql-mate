@@ -16,10 +16,10 @@ export function ChatMessage({ role, content, sql, explanation, warnings }: ChatM
   const isUser = role === 'user';
 
   return (
-    <div className={cn('flex gap-4 w-full', isUser ? 'justify-end' : 'justify-start')}>
-      <div className={cn('flex gap-3 max-w-[80%] min-w-0', isUser && 'flex-row-reverse')}>
+    <div className={cn('flex gap-2 md:gap-4 w-full', isUser ? 'justify-end' : 'justify-start')}>
+      <div className={cn('flex gap-2 md:gap-3 max-w-[80%] min-w-0', isUser && 'flex-row-reverse')}>
         <div className={cn(
-          'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center',
+          'flex-shrink-0 w-8 h-8 rounded-full hidden md:flex items-center justify-center',
           isUser ? 'bg-blue-600 text-white' : 'bg-purple-600 text-white'
         )}>
           {isUser ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}

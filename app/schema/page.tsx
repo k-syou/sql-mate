@@ -293,42 +293,44 @@ export default function SchemaTrackPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <div className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => router.push('/')}>
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-            <h1 className="text-2xl font-bold">스키마 트랙</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <Input
-              type="password"
-              placeholder="LLM API Key"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              className={`w-[200px] ${!apiKey ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
-            />
-            {provider === 'custom' && (
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="icon" onClick={() => router.push('/')}>
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+              <h1 className="text-base md:text-lg lg:text-2xl font-bold">스키마 트랙</h1>
+            </div>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
               <Input
-                type="text"
-                placeholder="Base URL"
-                value={baseURL}
-                onChange={(e) => setBaseURL(e.target.value)}
-                className="w-[200px]"
+                type="password"
+                placeholder="LLM API Key"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                className={`w-full sm:w-[200px] ${!apiKey ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
               />
-            )}
-            <ModelSelector
-              provider={provider}
-              model={model}
-              onProviderChange={setProvider}
-              onModelChange={setModel}
-            />
+              {provider === 'custom' && (
+                <Input
+                  type="text"
+                  placeholder="Base URL"
+                  value={baseURL}
+                  onChange={(e) => setBaseURL(e.target.value)}
+                  className="w-full sm:w-[200px]"
+                />
+              )}
+              <ModelSelector
+                provider={provider}
+                model={model}
+                onProviderChange={setProvider}
+                onModelChange={setModel}
+              />
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="flex-1 container mx-auto px-4 py-6 flex gap-6">
-        <div className="w-1/3 space-y-4">
+      <div className="flex-1 container mx-auto px-4 py-6 flex flex-col lg:flex-row gap-6">
+        <div className="w-full lg:w-1/3 space-y-4">
           {!schemaId ? (
             <Card>
               <CardHeader>
@@ -506,7 +508,7 @@ export default function SchemaTrackPage() {
           )}
         </div>
 
-        <div className="flex-1 flex flex-col">
+        <div className="w-full lg:flex-1 flex flex-col">
           <Card className="flex-1 flex flex-col">
             <CardHeader>
               <CardTitle>채팅</CardTitle>
